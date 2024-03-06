@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>3D まるばつゲーム</title>
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #3B3B3B;
+  perspective: 1000px;
+}
+
+#gameBoard {
+  width: 300px;
+  height: 300px;
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  gap: 5px;
+  transform-style: preserve-3d;
+}
+
+.cell {
+  background-color: #ECECEC;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 2em;
+  color: white;
+  border-radius: 10px;
+  cursor: pointer;
+  opacity: 0;
+  animation: enterCell 1.2s forwards;
+  animation-delay: var(--delay);
+}
+
+@keyframes enterCell {
+  0% {
+    transform: translateZ(-800px) rotateY(90deg);
+    opacity: 0;
+  }
+  100% {
+    transform: translateZ(0) rotateY(0deg);
+    opacity: 1;
+  }
+}
+
+#playerChoice, #gameStatus, button {
+  color: white;
+  text-align: center;
+}
+
+button {
+  background-color: #ECECEC;
+  border: none;
+  padding: 10px 20px;
+  margin: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  color: #3B3B3B;
+}
+
+button:hover {
+  background-color: #555;
+}
+
+.hidden {
+  display: none;
+}
+</style>
+</head>
+<body>
+<div id="playerChoice">
+  <p>プレイヤーは先行ですか、後行ですか？</p>
+  <button onclick="setPlayer('X')">先行 (X)</button>
+  <button onclick="setPlayer('O')">後行 (O)</button>
+</div>
+<div id="gameBoard" class="hidden"></div>
+<div id="gameStatus" class="hidden"></div>
+<button onclick="startGame()" class="hidden">ゲームをリセット</button>
+
+<script>
+let currentPlayer = "X";
+let gameActive = true;
+let gameState = ["", "", "", "", "", "", "", "", ""];
+const statusDisplay = document.getElementById('gameStatus');
+const gameBoard = document.getElementById('gameBoard');
+const playerChoice = document.getElementById('playerChoice');
+const resetButton = document.querySelector('button');
+
+const winningConditions = [
+  [0, 1, 2],
+  [3, 4, 5],
+  [6, 7, 8],
+  [0, 3, 6],
+  [1, 4, 7],
+  [2, 5, 8],
+  [0, 4, 8],
+  [2, 4, 6]
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+  createBoard();
+});
+
+function createBoard() {
+  gameBoard.innerHTML = '';
+  for (let i = 0; i < 9; i++) {
+    const cell = document.createElement('div');
+    cell.classList.add('cell');
+    cell.setAttribute('data-cell-index', i);
+    cell.style.setProperty('--delay', `${i * 0.1}s`);
+    cell.addEventListener('click', handleCellClick);
+    gameBoard.appendChild(cell);
+  }
+}
+
+function handleCellClick(event) {
+  const clickedCell = event.target;
+  const clickedCellIndex = parseInt(clickedCell.getAttribute('data-cell-index'));
+
+  if (gameState[clickedCellIndex] !== "" || !gameActive) {
+      return;
+  }
+
+  handleCellPlayed(clickedCell, clickedCellIndex);
+  handleResultValidation();
+}
+
+function handleCellPlayed(clickedCell, clickedCellIndex) {
+  gameState[clickedCellIndex] = currentPlayer;
+  clickedCell.innerHTML = currentPlayer;
+}
+
+function handleResultValidation() {
+  let roundWon = false;
+  for (let i = 0; i <= 7; i++) {
+    const winCondition = winningConditions[i];
+    let a = gameState[winCondition[0]];
+    let b = gameState[winCondition[1]];
+    let c = gameState[winCondition[2]];
+    if ([a, b, c].includes("")) continue;
+    if (a === b && b === c) {
+      roundWon = true;
+      break;
+    }
+  }
+
+  if (roundWon) {
+    statusDisplay.innerHTML = `プレイヤー${currentPlayer}の勝ちです！`;
+    gameActive = false;
+    return;
+  }
+
+  let roundDraw = !gameState.includes("");
+  if (roundDraw) {
+    statusDisplay.innerHTML = "引き分け！";
+    gameActive = false;
+    return;
+  }
+
+  handlePlayerChange();
+}
+
+function handlePlayerChange() {
+  currentPlayer = currentPlayer === "X" ? "O" : "X";
+  statusDisplay.innerHTML = `プレイヤー${currentPlayer}の番です`;
+}
+
+function startGame() {
+  gameState = ["", "", "", "", "", "", "", "", ""];
+  gameActive = true;
+  document.querySelectorAll('.cell').forEach(cell => cell.innerHTML = "");
+  gameBoard.classList.remove('hidden');
+  statusDisplay.classList.remove('hidden');
+  resetButton.classList.remove('hidden');
+  playerChoice.style.display = 'none'; // プレイヤー選択を非表示にする
+  statusDisplay.innerHTML = `プレイヤー${currentPlayer}の番です`;
+}
+
+function setPlayer(playerSymbol) {
+  currentPlayer = playerSymbol;
+  startGame(); // ここでstartGameを呼び出す際、currentPlayerが正しく設定されるように修正
+}
+</script>
+</body>
+</html>
+
